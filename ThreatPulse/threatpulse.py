@@ -96,17 +96,33 @@ class ThreatIntelligence:
         self.malicious_domains = set()
         self.tor_exit_nodes = set()
         
+        # State tracking
+        self.last_update = None
+        self.update_interval = 300  # 5 minutes minimum between updates
+        
         # Fallback data in case feeds fail
         self._load_fallback_data()
     
-    def fetch_threat_feeds(self) -> Dict[str, int]:
+    def fetch_threat_feeds(self, force: bool = False) -> Dict[str, int]:
         """Fetch and normalize threat intelligence using urllib"""
+        # Skip if recently updated (unless forced)
+        if not force and self.last_update:
+            time_since = time.time() - self.last_update
+            if time_since < self.update_interval:
+                print(f"{Colors.CYAN}[*] Using cached threat intelligence "
+                      f"(updated {int(time_since)} seconds ago){Colors.RESET}")
+                return self._get_current_counts()
+        
         results = {}
+        successful_feeds = 0
         
         print(f"{Colors.CYAN}[*] Fetching threat intelligence feeds...{Colors.RESET}")
         
         for feed_name, url in self.threat_feeds.items():
             try:
+                # Increase timeout for slow connections
+                timeout = 30
+                
                 # Create SSL context to avoid certificate issues
                 context = ssl.create_default_context()
                 context.check_hostname = False
@@ -118,17 +134,22 @@ class ThreatIntelligence:
                     headers={'User-Agent': 'ThreatPulse-SOC/2.0'}
                 )
                 
-                with urllib.request.urlopen(req, timeout=10, context=context) as response:
+                # Fetch with timeout
+                with urllib.request.urlopen(req, timeout=timeout, context=context) as response:
                     content = response.read().decode('utf-8')
                     
                     if feed_name == 'malicious_ips':
+                        ip_count = 0
                         for line in content.split('\n'):
                             ip = line.strip()
                             if ip and not ip.startswith('#'):
                                 self.malicious_ips.add(ip)
+                                ip_count += 1
                         results[feed_name] = len(self.malicious_ips)
+                        successful_feeds += 1
                         
                     elif feed_name == 'malware_domains':
+                        domain_count = 0
                         for line in content.split('\n'):
                             if not line.startswith('#') and line.strip():
                                 parts = line.split()
@@ -136,23 +157,48 @@ class ThreatIntelligence:
                                     domain = parts[1].strip()
                                     if '.' in domain:
                                         self.malicious_domains.add(domain)
+                                        domain_count += 1
                         results[feed_name] = len(self.malicious_domains)
+                        successful_feeds += 1
                         
                     elif feed_name == 'tor_exits':
+                        tor_count = 0
                         for line in content.split('\n'):
                             ip = line.strip()
                             if ip:
                                 self.tor_exit_nodes.add(ip)
+                                tor_count += 1
                         results[feed_name] = len(self.tor_exit_nodes)
+                        successful_feeds += 1
                             
+            except urllib.error.URLError as e:
+                print(f"{Colors.YELLOW}[!] Network error for {feed_name}: {e}{Colors.RESET}")
+                continue
+            except socket.timeout:
+                print(f"{Colors.YELLOW}[!] Timeout fetching {feed_name}{Colors.RESET}")
+                continue
             except Exception as e:
                 print(f"{Colors.YELLOW}[!] Failed to fetch {feed_name}: {e}{Colors.RESET}")
+                continue
         
-        print(f"{Colors.GREEN}[+] Threat intelligence updated")
-        for feed, count in results.items():
-            print(f"    {feed}: {count} indicators")
+        if successful_feeds > 0:
+            print(f"{Colors.GREEN}[+] Threat intelligence updated")
+            for feed, count in results.items():
+                print(f"    {feed}: {count} indicators")
+            self.last_update = time.time()
+        else:
+            print(f"{Colors.YELLOW}[!] Using fallback threat data{Colors.RESET}")
+            results = self._get_current_counts()
         
         return results
+    
+    def _get_current_counts(self) -> Dict[str, int]:
+        """Return current indicator counts"""
+        return {
+            'malicious_ips': len(self.malicious_ips),
+            'malware_domains': len(self.malicious_domains),
+            'tor_exits': len(self.tor_exit_nodes)
+        }
     
     def _load_fallback_data(self):
         """Load fallback threat data if feeds fail"""
@@ -249,6 +295,8 @@ class NetworkAnalyzer:
                                 )
                                 alerts.append(alert)
         
+        except subprocess.TimeoutExpired:
+            print(f"{Colors.YELLOW}[!] Network analysis timed out{Colors.RESET}")
         except Exception as e:
             print(f"{Colors.YELLOW}[!] Network analysis error: {e}{Colors.RESET}")
         
@@ -399,6 +447,8 @@ class ProcessAnalyzer:
                         )
                         alerts.append(alert)
         
+        except subprocess.TimeoutExpired:
+            print(f"{Colors.YELLOW}[!] Process analysis timed out{Colors.RESET}")
         except Exception as e:
             print(f"{Colors.YELLOW}[!] Process analysis error: {e}{Colors.RESET}")
         
@@ -571,6 +621,8 @@ class UserAnalyzer:
                                 )
                                 alerts.append(alert)
         
+        except subprocess.TimeoutExpired:
+            print(f"{Colors.YELLOW}[!] Windows user analysis timed out{Colors.RESET}")
         except Exception as e:
             print(f"{Colors.YELLOW}[!] Windows user analysis error: {e}{Colors.RESET}")
         
@@ -637,6 +689,8 @@ class UserAnalyzer:
                                 )
                                 alerts.append(alert)
         
+        except subprocess.TimeoutExpired:
+            print(f"{Colors.YELLOW}[!] Session analysis timed out{Colors.RESET}")
         except Exception as e:
             print(f"{Colors.YELLOW}[!] Session analysis error: {e}{Colors.RESET}")
         
@@ -896,7 +950,7 @@ class ThreatPulse:
         
         all_alerts = []
         
-        # Update threat intelligence
+        # Update threat intelligence - ONLY ONCE
         self.threat_intel.fetch_threat_feeds()
         
         # Run all analyzers
@@ -932,7 +986,6 @@ class ThreatPulse:
     def run_network_scan(self):
         """Run network analysis only"""
         print(f"{Colors.CYAN}[*] Running network analysis...{Colors.RESET}")
-        self.threat_intel.fetch_threat_feeds()
         alerts = self.network_analyzer.analyze_network()
         for alert in alerts:
             self.alert_engine.generate_alert(alert)
@@ -941,7 +994,6 @@ class ThreatPulse:
     def run_log_scan(self):
         """Run log analysis only"""
         print(f"{Colors.CYAN}[*] Running log analysis...{Colors.RESET}")
-        self.threat_intel.fetch_threat_feeds()
         alerts = self.log_analyzer.analyze_logs()
         for alert in alerts:
             self.alert_engine.generate_alert(alert)
@@ -1024,7 +1076,7 @@ class ThreatPulse:
         self.threat_intel.fetch_threat_feeds()
         
         try:
-            while True:
+            while not shutdown_event.is_set():
                 cycle += 1
                 print(f"\n{Colors.CYAN}{'='*60}{Colors.RESET}")
                 print(f"{Colors.CYAN}[*] Monitoring Cycle #{cycle}{Colors.RESET}")
@@ -1042,11 +1094,9 @@ class ThreatPulse:
                 for alert in alerts:
                     self.alert_engine.generate_alert(alert)
                 
-                # Wait for next cycle
-                for i in range(interval, 0, -1):
-                    print(f"\r[+] Next scan in {i} seconds...", end="", flush=True)
-                    time.sleep(1)
-                print()
+                # Wait for next cycle with interruptible sleep
+                print(f"\n[+] Next scan in {interval} seconds...")
+                shutdown_event.wait(timeout=interval)
                     
         except KeyboardInterrupt:
             print(f"\n{Colors.YELLOW}[!] Monitoring stopped by user{Colors.RESET}")
@@ -1126,14 +1176,15 @@ def main():
         # Run selected modules
         all_alerts = []
         
-        if args.network:
+        # Update threat intelligence if network or log analysis is requested
+        if args.network or args.logs:
             print(f"{Colors.CYAN}[*] Updating threat intelligence...{Colors.RESET}")
             tp.threat_intel.fetch_threat_feeds()
+        
+        if args.network:
             all_alerts.extend(tp.run_network_scan())
         
         if args.logs:
-            print(f"{Colors.CYAN}[*] Updating threat intelligence...{Colors.RESET}")
-            tp.threat_intel.fetch_threat_feeds()
             all_alerts.extend(tp.run_log_scan())
         
         if args.processes:
@@ -1148,6 +1199,8 @@ def main():
         # Generate report if any scans were run
         if all_alerts:
             tp.alert_engine.generate_report(all_alerts)
+        else:
+            print(f"{Colors.YELLOW}[!] No analysis modules selected. Use --full-scan or select specific modules.{Colors.RESET}")
 
 if __name__ == "__main__":
     try:
