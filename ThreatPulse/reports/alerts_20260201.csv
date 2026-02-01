@@ -1,0 +1,7 @@
+timestamp,severity,source,indicator,description,correlation_id,evidence
+2026-02-01T08:38:41.942935,INFO,User Analysis,>console,Active Windows session: USER,SESS_>console_1,"{""username"": "">console"", ""session_name"": ""USER"", ""session_id"": ""1""}"
+2026-02-01T08:38:42.190185,WARNING,File System Analysis,OneDrive.App.exe,Recently modified executable in C:\Users\USER\AppData\Local\Temp,FILE_9047,"{""file_path"": ""C:\\Users\\USER\\AppData\\Local\\Temp\\AAF1C995AD8D415EB5BB440497201F77\\OneDriveDeltaPatch\\OneDrive.App.exe"", ""size"": 951656, ""modified_time"": ""2026-01-31T23:57:28.167388"", ""directory"": ""C:\\Users\\USER\\AppData\\Local\\Temp""}"
+2026-02-01T08:39:43.187793,INFO,User Analysis,>console,Active Windows session: USER,SESS_>console_1,"{""username"": "">console"", ""session_name"": ""USER"", ""session_id"": ""1""}"
+2026-02-01T08:51:05.004428,INFO,User Analysis,>console,Active Windows session: USER,SESS_>console_1,"{""username"": "">console"", ""session_name"": ""USER"", ""session_id"": ""1""}"
+2026-02-01T09:02:40.669881,INFO,User Analysis,>console,Active Windows session: USER,SESS_>console_1,"{""username"": "">console"", ""session_name"": ""USER"", ""session_id"": ""1""}"
+2026-02-01T09:03:43.877487,INFO,User Analysis,>console,Active Windows session: USER,SESS_>console_1,"{""username"": "">console"", ""session_name"": ""USER"", ""session_id"": ""1""}"

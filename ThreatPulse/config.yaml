@@ -1,0 +1,68 @@
+# ThreatPulse Configuration
+threatpulse:
+  version: "1.0.0"
+  
+  # Threat Intelligence Feeds
+  threat_feeds:
+    malware_domains: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+    ip_blacklist: "https://rules.emergingthreats.net/blockrules/compromised-ips.txt"
+    cve_feed: "https://cve.circl.lu/api/last"
+    tor_exits: "https://check.torproject.org/torbulkexitlist"
+  
+  # Analysis Settings
+  analysis:
+    network:
+      real_time_capture: false
+      capture_duration: 30
+      check_connections: true
+    logs:
+      files_to_monitor:
+        - /var/log/auth.log
+        - /var/log/syslog
+        - /var/log/secure
+        - /var/log/messages
+      suspicious_patterns:
+        - "Failed password"
+        - "authentication failure"
+        - "Invalid user"
+        - "POSSIBLE BREAK-IN ATTEMPT"
+    processes:
+      suspicious_keywords:
+        - "miner"
+        - "cryptominer"
+        - "backdoor"
+        - "reverse_shell"
+      suspicious_ports:
+        - 4444
+        - 31337
+        - 1337
+  
+  # Alerting Settings
+  alerting:
+    severity_levels:
+      critical:
+        - "Connection to known malicious IP"
+        - "Cryptocurrency miner detected"
+        - "Reverse shell detected"
+      warning:
+        - "Connection to Tor exit node"
+        - "Suspicious log entry"
+        - "Non-root packet capture"
+    
+    output:
+      directory: "./reports"
+      formats:
+        - "csv"
+        - "json"
+      max_file_size_mb: 100
+  
+  # Monitoring Settings
+  monitoring:
+    real_time_interval: 60
+    threat_intel_update_interval: 300
+  
+  # System Settings
+  system:
+    require_root: false
+    log_level: "INFO"
+    max_threads: 5

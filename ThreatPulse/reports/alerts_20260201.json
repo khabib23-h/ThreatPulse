@@ -1,0 +1,81 @@
+[
+  {
+    "timestamp": "2026-02-01T08:38:41.942935",
+    "severity": "INFO",
+    "source": "User Analysis",
+    "indicator": ">console",
+    "description": "Active Windows session: USER",
+    "correlation_id": "SESS_>console_1",
+    "evidence": {
+      "username": ">console",
+      "session_name": "USER",
+      "session_id": "1"
+    }
+  },
+  {
+    "timestamp": "2026-02-01T08:38:42.190185",
+    "severity": "WARNING",
+    "source": "File System Analysis",
+    "indicator": "OneDrive.App.exe",
+    "description": "Recently modified executable in C:\\Users\\USER\\AppData\\Local\\Temp",
+    "correlation_id": "FILE_9047",
+    "evidence": {
+      "file_path": "C:\\Users\\USER\\AppData\\Local\\Temp\\AAF1C995AD8D415EB5BB440497201F77\\OneDriveDeltaPatch\\OneDrive.App.exe",
+      "size": 951656,
+      "modified_time": "2026-01-31T23:57:28.167388",
+      "directory": "C:\\Users\\USER\\AppData\\Local\\Temp"
+    }
+  },
+  {
+    "timestamp": "2026-02-01T08:39:43.187793",
+    "severity": "INFO",
+    "source": "User Analysis",
+    "indicator": ">console",
+    "description": "Active Windows session: USER",
+    "correlation_id": "SESS_>console_1",
+    "evidence": {
+      "username": ">console",
+      "session_name": "USER",
+      "session_id": "1"
+    }
+  },
+  {
+    "timestamp": "2026-02-01T08:51:05.004428",
+    "severity": "INFO",
+    "source": "User Analysis",
+    "indicator": ">console",
+    "description": "Active Windows session: USER",
+    "correlation_id": "SESS_>console_1",
+    "evidence": {
+      "username": ">console",
+      "session_name": "USER",
+      "session_id": "1"
+    }
+  },
+  {
+    "timestamp": "2026-02-01T09:02:40.669881",
+    "severity": "INFO",
+    "source": "User Analysis",
+    "indicator": ">console",
+    "description": "Active Windows session: USER",
+    "correlation_id": "SESS_>console_1",
+    "evidence": {
+      "username": ">console",
+      "session_name": "USER",
+      "session_id": "1"
+    }
+  },
+  {
+    "timestamp": "2026-02-01T09:03:43.877487",
+    "severity": "INFO",
+    "source": "User Analysis",
+    "indicator": ">console",
+    "description": "Active Windows session: USER",
+    "correlation_id": "SESS_>console_1",
+    "evidence": {
+      "username": ">console",
+      "session_name": "USER",
+      "session_id": "1"
+    }
+  }
+]
